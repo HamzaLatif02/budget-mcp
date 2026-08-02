@@ -1,7 +1,9 @@
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent.parent / "budget.db"
+_DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent.parent / "budget.db"
+DB_PATH = Path(os.environ["BUDGET_MCP_DB_PATH"]) if os.environ.get("BUDGET_MCP_DB_PATH") else _DEFAULT_DB_PATH
 
 SCHEMA_SQL = """
 -- All money columns (monthly_limit, amount, target_amount, current_amount)

@@ -16,6 +16,9 @@ budget-mcp/
 │       ├── init_db.py     # resets budget.db and seeds example rows
 │       ├── money.py       # dollars <-> integer-cents conversion
 │       └── dates.py       # date validation + period resolution
+├── tests/
+│   ├── conftest.py         # puts src/ on sys.path for test collection
+│   └── test_tools.py       # end-to-end tool tests, see "Tests" below
 └── .venv/                 # local virtualenv (gitignored)
 ```
 
@@ -29,7 +32,7 @@ budget-mcp/
 ```bash
 cd budget-mcp
 /opt/homebrew/bin/python3.12 -m venv .venv
-.venv/bin/pip install -e .
+.venv/bin/pip install -e ".[dev]"
 PYTHONPATH=src .venv/bin/python -m budget_mcp.init_db   # creates + seeds budget.db
 ```
 
@@ -76,6 +79,20 @@ wipe `budget.db` and reset it to the seed data.
   `"category"` or `"source"`, and returns each group's total plus % of total
   spend. Rejects unknown `period`/`group_by` values and missing/invalid
   custom-range dates.
+
+## Tests
+
+```bash
+.venv/bin/pytest tests/ -v
+```
+
+Each test spawns a real server subprocess and drives it through the actual
+MCP protocol (same path Claude Desktop uses), against a fresh throwaway
+SQLite db (via `BUDGET_MCP_DB_PATH`) — your real `budget.db` is never
+touched. Covers both tools' happy paths (including that running totals and
+spend percentages come out exact, not float-drifted) and every validation
+rejection (bad dates, zero/non-finite/sub-cent amounts, unknown categories,
+empty source, bad `period`/`group_by`, missing custom-range dates).
 
 ## Running locally
 

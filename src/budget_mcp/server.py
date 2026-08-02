@@ -3,6 +3,7 @@ from datetime import timedelta
 from mcp.server import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
+from budget_mcp.categorizer import categorize
 from budget_mcp.db import get_connection
 from budget_mcp.dates import month_bounds, resolve_period, validate_iso_date
 from budget_mcp.money import cents_to_dollars, dollars_to_cents
@@ -135,6 +136,28 @@ def get_spending_summary(
         "total_spend_dollars": cents_to_dollars(total_spend_cents),
         "groups": groups,
     }
+
+
+@mcp.tool()
+def categorize_transaction(description: str) -> dict:
+    """Suggest a budget category for a raw transaction description via an LLM classifier.
+
+    description: raw text as it might appear on a statement, e.g.
+    "TESCO STORES 3421 LONDON".
+
+    Returns category (one of rent/food/transport/savings/business_expense/
+    entertainment/other), confidence (0-1), and reasoning. The category is
+    checked against the allowed list before being returned - an invalid
+    category from the model surfaces as an error rather than being passed
+    through.
+    """
+    if not description or not description.strip():
+        raise ToolError("description is required and cannot be empty")
+
+    try:
+        return categorize(description.strip())
+    except ValueError as e:
+        raise ToolError(str(e)) from e
 
 
 def main() -> None:

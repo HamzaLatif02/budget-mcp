@@ -15,7 +15,9 @@ budget-mcp/
 │       ├── db.py          # schema DDL + connection helper
 │       ├── init_db.py     # resets budget.db and seeds example rows
 │       ├── money.py       # dollars <-> integer-cents conversion
-│       └── dates.py       # date validation + period resolution
+│       ├── dates.py       # date validation + period resolution
+│       ├── categorizer.py # LLM-based transaction categorizer
+│       └── eval_categorizer.py  # accuracy check against a labeled set
 ├── tests/
 │   ├── conftest.py         # puts src/ on sys.path for test collection
 │   └── test_tools.py       # end-to-end tool tests, see "Tests" below
@@ -49,6 +51,15 @@ PYTHONPATH=src .venv/bin/python -m budget_mcp.init_db   # creates + seeds budget
 > invoked with `PYTHONPATH=src`, which sidesteps the editable-install
 > mechanism entirely.
 
+`categorize_transaction` calls the Anthropic API, so it needs a key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Add the same variable to the `env` block in the Claude Desktop config below so
+it's available when Claude Desktop launches the server.
+
 ## Database
 
 Three tables (see `src/budget_mcp/db.py` for the full DDL):
@@ -79,6 +90,13 @@ wipe `budget.db` and reset it to the seed data.
   `"category"` or `"source"`, and returns each group's total plus % of total
   spend. Rejects unknown `period`/`group_by` values and missing/invalid
   custom-range dates.
+- **`categorize_transaction(description)`** — classifies a raw statement line
+  (e.g. `"TESCO STORES 3421 LONDON"`) into one of `rent`, `food`, `transport`,
+  `savings`, `business_expense`, `entertainment`, `other`, via a Claude Haiku
+  4.5 call with structured JSON output (`category`, `confidence`, `reasoning`).
+  The returned category is checked against the fixed list before being
+  returned — an invalid category from the model surfaces as an error rather
+  than being trusted. Requires `ANTHROPIC_API_KEY` (see Setup above).
 
 ## Tests
 
@@ -93,6 +111,17 @@ touched. Covers both tools' happy paths (including that running totals and
 spend percentages come out exact, not float-drifted) and every validation
 rejection (bad dates, zero/non-finite/sub-cent amounts, unknown categories,
 empty source, bad `period`/`group_by`, missing custom-range dates).
+
+`categorize_transaction` isn't in this suite — LLM output isn't deterministic,
+so it doesn't belong in a pass/fail unit test. Instead, check its accuracy
+against 15 hand-labeled realistic statement lines:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m budget_mcp.eval_categorizer
+```
+
+This calls the live API (needs `ANTHROPIC_API_KEY`) and prints a pass/fail
+per example plus overall accuracy.
 
 ## Running locally
 
@@ -123,7 +152,8 @@ an `mcpServers` entry:
       "command": "/Users/hamza/Desktop/projects/budget-mcp/.venv/bin/python",
       "args": ["-m", "budget_mcp.server"],
       "env": {
-        "PYTHONPATH": "/Users/hamza/Desktop/projects/budget-mcp/src"
+        "PYTHONPATH": "/Users/hamza/Desktop/projects/budget-mcp/src",
+        "ANTHROPIC_API_KEY": "sk-ant-..."
       }
     }
   }

@@ -1,19 +1,20 @@
 from budget_mcp.db import DB_PATH, SCHEMA_SQL, get_connection
 
+# Amounts are integer cents (e.g. 50000 == $500.00).
 SEED_BUDGETS = [
-    ("groceries", 500.0),
-    ("rent", 1800.0),
-    ("entertainment", 150.0),
+    ("groceries", 50_000),
+    ("rent", 180_000),
+    ("entertainment", 15_000),
 ]
 
 SEED_TRANSACTIONS = [
-    ("2026-07-15", -62.18, "groceries", "checking", "Trader Joe's"),
-    ("2026-08-01", -1800.00, "rent", "checking", "August rent"),
+    ("2026-07-15", -6_218, "groceries", "checking", "Trader Joe's"),
+    ("2026-08-01", -180_000, "rent", "checking", "August rent"),
 ]
 
 SEED_SAVINGS_GOALS = [
-    ("Emergency Fund", 10000.0, 3250.0, "high-yield savings"),
-    ("Vacation", 3000.0, 900.0, "brokerage"),
+    ("Emergency Fund", 1_000_000, 325_000, "high-yield savings"),
+    ("Vacation", 300_000, 90_000, "brokerage"),
 ]
 
 

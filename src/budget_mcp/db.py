@@ -4,15 +4,17 @@ from pathlib import Path
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "budget.db"
 
 SCHEMA_SQL = """
+-- All money columns (monthly_limit, amount, target_amount, current_amount)
+-- are stored as integer cents to avoid float rounding; divide by 100 for dollars.
 CREATE TABLE IF NOT EXISTS budgets (
     category      TEXT PRIMARY KEY,
-    monthly_limit REAL NOT NULL CHECK (monthly_limit >= 0)
+    monthly_limit INTEGER NOT NULL CHECK (monthly_limit >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     date     TEXT NOT NULL,
-    amount   REAL NOT NULL,
+    amount   INTEGER NOT NULL,
     category TEXT NOT NULL REFERENCES budgets(category),
     source   TEXT NOT NULL,
     note     TEXT
@@ -21,8 +23,8 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS savings_goals (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     name           TEXT NOT NULL,
-    target_amount  REAL NOT NULL CHECK (target_amount >= 0),
-    current_amount REAL NOT NULL DEFAULT 0 CHECK (current_amount >= 0),
+    target_amount  INTEGER NOT NULL CHECK (target_amount >= 0),
+    current_amount INTEGER NOT NULL DEFAULT 0 CHECK (current_amount >= 0),
     account_type   TEXT NOT NULL
 );
 """
